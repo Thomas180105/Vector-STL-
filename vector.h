@@ -473,6 +473,7 @@ namespace sjtu
             {
                 storage[i] = storage[i + 1];
             }
+            helper.template destroy(storage + curSize - 1);
             --curSize;
             if (flag) return iterator(storage, curSize - 1);
             return pos;
@@ -489,6 +490,7 @@ namespace sjtu
             {
                 storage[i] = storage[i + 1];
             }
+            helper.template destroy(storage + curSize - 1);
             --curSize;
             return iterator(storage, ind - (ind == curSize));
         }
@@ -508,6 +510,7 @@ namespace sjtu
         void pop_back()
         {
             if (curSize == 0) throw container_is_empty();
+            helper.template destroy(storage + curSize - 1);
             --curSize;
         }
     };
