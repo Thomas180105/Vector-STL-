@@ -45,8 +45,8 @@ void TestBint()
 
 int main()
 {
+    freopen("3_mineAns", "w", stdout);
     TestInteger();
     TestMatrix();
     TestBint();
-
 }

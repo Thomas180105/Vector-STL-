@@ -262,13 +262,15 @@ namespace sjtu
         T* storage;
         size_t curSize;
         size_t maxSize;
+        std::allocator<T> helper;
         void doubleSpace()
         {
             T *tmp = storage;
             maxSize *= 2;
-            storage = new T [maxSize];
-            for (int i = 0; i < curSize; ++i) storage[i] = tmp[i];
-            delete [] tmp;
+            storage = helper.allocate(maxSize);
+            for (int i = 0; i < curSize; ++i) helper.template construct(storage + i, tmp[i]);
+            for (int i = 0; i < curSize; ++i) helper.template destroy(tmp + i);
+            helper.deallocate(tmp, curSize);
         }
 
     public:
@@ -278,7 +280,7 @@ namespace sjtu
         */
         vector()
         {
-            storage = new T [initSize];
+            storage = helper.allocate(initSize);
             curSize = 0;
             maxSize = initSize;
         }
@@ -286,15 +288,19 @@ namespace sjtu
         {
             curSize = other.curSize;
             maxSize = other.maxSize;
-            storage = new T [maxSize];
+            storage = helper.allocate(maxSize);
             for (int i = 0; i < curSize; ++i)
             {
-                storage[i] = other.storage[i];
+                helper.template construct(storage + i, other.storage[i]);
             }
         }
         ~vector()
         {
-            delete [] storage;
+            for (int i = 0; i < curSize; ++i)
+            {
+                helper.template destroy(storage + i);
+            }
+            helper.deallocate(storage, maxSize);
         }
 
         /**
@@ -303,13 +309,17 @@ namespace sjtu
         vector &operator=(const vector &other)
         {
             if (this == &other) return *this;
-            curSize = other.curSize;
-            maxSize = other.maxSize;
-            delete [] storage;
-            storage = new T [maxSize];
             for (int i = 0; i < curSize; ++i)
             {
-                storage[i] = other.storage[i];
+                helper.template destroy(storage + i);
+            }
+            helper.deallocate(storage, maxSize);
+            curSize = other.curSize;
+            maxSize = other.maxSize;
+            storage = helper.allocate(maxSize);
+            for (int i = 0; i < curSize; ++i)
+            {
+                helper.template construct(storage + i, other.storage[i]);
             }
             return *this;
         }
@@ -423,6 +433,7 @@ namespace sjtu
         {
             if (curSize == maxSize) doubleSpace();
             int theNum = pos.getNum();
+            helper.template construct(storage + curSize, value);
             for (int i = curSize; i > theNum; --i)
             {
                 storage[i] = storage[i - 1];
@@ -441,6 +452,7 @@ namespace sjtu
         {
             if (ind > curSize) throw index_out_of_bound();
             if (curSize == maxSize) doubleSpace();
+            helper.template construct(storage + curSize, value);
             for (int i = curSize; i > ind; --i)
             {
                 storage[i] = storage[i - 1];
@@ -486,7 +498,7 @@ namespace sjtu
         void push_back(const T &value)
         {
             if (curSize == maxSize) doubleSpace();
-            storage[curSize] = value;
+            helper.template construct(storage + curSize, value);
             ++curSize;
         }
         /**
